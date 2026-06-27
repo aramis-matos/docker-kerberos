@@ -4,8 +4,8 @@ echo "==== Kerberos KDC and Kadmin =============================================
 echo "==================================================================================="
 KADMIN_PRINCIPAL_FULL=$KADMIN_PRINCIPAL@$REALM
 NFS_PRINCIPAL_FULL="nfs/nfs-server@$REALM"
-CCYANIDE_PRINCIPAL_FULL="ccyanide@$REALM"
-PANDA_LDAP_PRINCIPAL_FULL="ldap/panda@$REALM"
+HOST_PRINCIPAL_FULL="$HOST_USER@$REALM"
+HOST_LDAP_PRINCIPAL_FULL="ldap/$HOST_HOSTNAME@$REALM"
 OPENLDAP_PRINCIPAL_FULL="ldap/openldap@$REALM"
 
 echo "REALM: $REALM"
@@ -83,28 +83,27 @@ echo ""
 
 mkdir /keytabs
 rm /keytabs/*
-kadmin.local -q "delete_principal -force $NFS_PRINCIPAL_FULL"
-kadmin.local -q "addprinc -pw $KADMIN_PASSWORD $NFS_PRINCIPAL_FULL"
-kadmin.local -q "xst -norandkey -k /keytabs/nfs-server.keytab $NFS_PRINCIPAL_FULL"
 
-kadmin.local -q "delete_principal -force $CCYANIDE_PRINCIPAL_FULL"
-kadmin.local -q "addprinc -pw $KADMIN_PASSWORD $CCYANIDE_PRINCIPAL_FULL"
-kadmin.local -q "xst -norandkey -k /keytabs/ccyanide.keytab $CCYANIDE_PRINCIPAL_FULL"
+kadmin.local -q "delete_principal -force $HOST_PRINCIPAL_FULL"
+kadmin.local -q "addprinc -pw $KADMIN_PASSWORD $HOST_PRINCIPAL_FULL"
+kadmin.local -q "xst -norandkey -k /keytabs/host-user.keytab $HOST_PRINCIPAL_FULL"
 
-kadmin.local -q "delete_principal -force $ROOT_PRINCIPAL_FULL"
-kadmin.local -q "addprinc -pw $KADMIN_PASSWORD $ROOT_PRINCIPAL_FULL"
-kadmin.local -q "xst -norandkey -k /keytabs/root.keytab $ROOT_PRINCIPAL_FULL"
-
-kadmin.local -q "delete_principal -force $PANDA_LDAP_PRINCIPAL_FULL"
-kadmin.local -q "addprinc -pw $KADMIN_PASSWORD $PANDA_LDAP_PRINCIPAL_FULL"
-kadmin.local -q "xst -norandkey -k /keytabs/panda-server.keytab $PANDA_LDAP_PRINCIPAL_FULL"
+kadmin.local -q "delete_principal -force $HOST_LDAP_PRINCIPAL_FULL"
+kadmin.local -q "addprinc -pw $KADMIN_PASSWORD $HOST_LDAP_PRINCIPAL_FULL"
+kadmin.local -q "xst -norandkey -k /keytabs/host-server.keytab $HOST_LDAP_PRINCIPAL_FULL"
 
 kadmin.local -q "delete_principal -force $OPENLDAP_PRINCIPAL_FULL"
 kadmin.local -q "addprinc -pw $KADMIN_PASSWORD $OPENLDAP_PRINCIPAL_FULL"
 kadmin.local -q "xst -norandkey -k /keytabs/openldap-server.keytab $OPENLDAP_PRINCIPAL_FULL"
-kadmin.local -q "xst -norandkey -k /keytabs/openldap-server.keytab $PANDA_LDAP_PRINCIPAL_FULL"
+kadmin.local -q "xst -norandkey -k /keytabs/openldap-server.keytab $HOST_LDAP_PRINCIPAL_FULL"
 
-chmod -R 644 /keytabs
+kadmin.local -q "delete_principal -force $NFS_PRINCIPAL_FULL"
+kadmin.local -q "addprinc -pw $KADMIN_PASSWORD $NFS_PRINCIPAL_FULL"
+kadmin.local -q "xst -norandkey -k /keytabs/nfs-server.keytab $NFS_PRINCIPAL_FULL"
+kadmin.local -q "xst -norandkey -k /keytabs/openldap-server.keytab $HOST_LDAP_PRINCIPAL_FULL"
+
+chmod -R 644 /keytabs/*.keytab
+chown -R 1000:1000 /keytabs/*.keytab
 
 echo "==================================================================================="
 echo "==== Run the services ============================================================="

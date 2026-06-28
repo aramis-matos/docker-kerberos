@@ -1,0 +1,5 @@
+dn: cn=config
+changetype: modify
+add: olcAuthzRegexp
+olcAuthzRegexp: uid=ldap/panda,cn=gssapi,cn=auth
+  dn:cn=ldap,ou=people,dc=example,dc=local

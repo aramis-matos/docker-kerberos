@@ -17,6 +17,8 @@ services:
       # This is needed otherwise there won't be enough entropy to generate a new kerberos realm
       - /dev/urandom:/dev/random
       - ./keytabs:/keytabs
+    networks:
+      - ldap
 
   kerberos-client:
     build: ./kerberos-client
@@ -56,18 +58,26 @@ services:
       - ./data:/data
     depends_on:
       - kdc-kadmin
+    networks:
+      - ldap
     
   openldap:
-    image: osixia/openldap
-    hostname: panda
+    build:
+      context: ./
+    hostname: ${HOST_HOSTNAME}
+    entrypoint: ['bash', '-c', 'usr/sbin/container ; sleep 10 && /tmp/load-config.sh']
     ports:
-      - 389:389
-      - 636:636
+      - 389:3890
+      - 636:6360
     environment:
-      LDAP_ORGANISATION: Example Inc           # Organization name
-      LDAP_DOMAIN: example.local               # Domain name for LDAP
-      LDAP_ADMIN_PASSWORD: password # Admin password for ldapadmin user
-      LDAP_BASE_DN: dc=example,dc=local        # Base DN for LDAP entries
+      OPENLDAP_BOOTSTRAP_ORGANIZATION: "Example Inc" 
+      OPENLDAP_BOOTSTRAP_SUFFIX: "dc=example,dc=local"
+      OPENLDAP_BOOTSTRAP_TLS: true
+      OPENLDAP_BOOTSTRAP_TLS_REQUIRED: false
+      OPENLDAP_BOOTSTRAP_SCHEMAS: "core.ldif cosine.ldif inetorgperson.ldif nis.ldif"
+      OPENLDAP_BOOTSTRAP_FRONTEND_PASSWORD_HASH: "{ARGON2}"
+      OPENLDAP_BOOTSTRAP_CONFIG_ROOT_PASSWORD_HASHED: ${LDAP_PASSWORD_HASHED}
+      OPENLDAP_BOOTSTRAP_DATA_ROOT_PASSWORD_HASHED: ${LDAP_PASSWORD_HASHED}
     volumes:
       - openldap-conf:/etc/openldap/slapd.d
       - openldap-data:/var/lib/openldap/openldap-data
@@ -80,16 +90,49 @@ services:
         source: ./krb5.conf
         target: /etc/krb5.conf
         read_only: true
+    healthcheck:
+      test: ["CMD", "bash", "-c", "netstat -lntu | grep -qa 3890"]
+      interval: 2s
+      timeout: 1s
+      retries: 100
+      start_period: 10s
+    networks:
+      ldap:
+        aliases:
+          - openldap
+    depends_on:
+      - kdc-kadmin
 
   phpldapadmin:
     image: osixia/phpldapadmin:0.9.0
     ports:
       - 6443:443
     environment:
-      PHPLDAPADMIN_LDAP_HOSTS: panda
+      PHPLDAPADMIN_LDAP_HOSTS: "#PYTHON2BASH:[{'openldap': [{'server': [{'tls': False}, {'port': 3890}]}, {'login': [{'bind_id': 'cn=admin,dc=example,dc=local'}, {'bind_pass': '$LDAP_PASSWORD'}]}]}]"
+      PHPLDAPADMIN_HTTPS_CRT_FILENAME: cert.crt
+      PHPLDAPADMIN_HTTPS_KEY_FILENAME: cert.key
+      PHPLDAPADMIN_HTTPS_CA_FILENAME: ca.crt
     depends_on:
       - openldap
+    volumes:
+      - ./certs:/container/service/phpldapadmin/assets/apache2/certs
+    networks:
+      - ldap
 
+  setup-ldap:
+    image: alpine:latest
+    build:
+      context: ./custom/
+    depends_on:
+      openldap:
+        condition: service_healthy
+    environment:
+      LDAP_PASSWORD: ${LDAP_PASSWORD}
+    networks:
+      - ldap
+
+networks:
+  ldap:
 
 volumes:
   openldap-conf:

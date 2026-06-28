@@ -1,1 +1,4 @@
 /keytabs/*.keytab
+/certs/*.crt
+/certs/*.pem
+/certs/*.key

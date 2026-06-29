@@ -1,5 +1,5 @@
 dn: cn=config
 changetype: modify
 add: olcAuthzRegexp
-olcAuthzRegexp: uid=([^/]+)/([^,]+),cn=gssapi,cn=auth
-  dn:cn=$2,ou=people,dc=example,dc=local
+olcAuthzRegexp: uid=(.+),cn=gssapi,cn=auth
+  dn:cn=$1,ou=people,dc=example,dc=local

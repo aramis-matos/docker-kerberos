@@ -7,6 +7,7 @@ NFS_PRINCIPAL_FULL="nfs/nfs-server@$REALM"
 HOST_PRINCIPAL_FULL="$HOST_USER@$REALM"
 HOST_LDAP_PRINCIPAL_FULL="ldap/$HOST_HOSTNAME@$REALM"
 OPENLDAP_PRINCIPAL_FULL="ldap/openldap@$REALM"
+SERVICE_ACC_PRINCIPAL_FULL="service_acc@$REALM"
 
 echo "REALM: $REALM"
 echo "KADMIN_PRINCIPAL_FULL: $KADMIN_PRINCIPAL_FULL"
@@ -88,9 +89,13 @@ kadmin.local -q "delete_principal -force $HOST_PRINCIPAL_FULL"
 kadmin.local -q "addprinc -pw $KADMIN_PASSWORD $HOST_PRINCIPAL_FULL"
 kadmin.local -q "xst -norandkey -k /keytabs/host-user.keytab $HOST_PRINCIPAL_FULL"
 
+kadmin.local -q "delete_principal -force $SERVICE_ACC_PRINCIPAL_FULL"
+kadmin.local -q "addprinc -pw $KADMIN_PASSWORD $SERVICE_ACC_PRINCIPAL_FULL"
+
 kadmin.local -q "delete_principal -force $HOST_LDAP_PRINCIPAL_FULL"
 kadmin.local -q "addprinc -pw $KADMIN_PASSWORD $HOST_LDAP_PRINCIPAL_FULL"
 kadmin.local -q "xst -norandkey -k /keytabs/host-server.keytab $HOST_LDAP_PRINCIPAL_FULL"
+kadmin.local -q "xst -norandkey -k /keytabs/host-server.keytab $SERVICE_ACC_PRINCIPAL_FULL"
 
 kadmin.local -q "delete_principal -force $OPENLDAP_PRINCIPAL_FULL"
 kadmin.local -q "addprinc -pw $KADMIN_PASSWORD $OPENLDAP_PRINCIPAL_FULL"
